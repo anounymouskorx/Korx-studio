@@ -1,9 +1,11 @@
 {
-"name": "KORX Studio Offline Design",
-"short_name": "KORX Studio",
-"start_url": "./index.html",
-"display": "standalone",
-"background_color": "#10131b",
-"theme_color": "#10131b",
-"description": "Offline-first graphic design workspace"
+  "name": "KORX STUDIO - Offline Design",
+  "short_name": "KORX STUDIO",
+  "description": "Create graphics, edit text, sketch and design offline.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#10131b",
+  "theme_color": "#ffd22f"
 }
