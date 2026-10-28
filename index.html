@@ -1,101 +1,393 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#10131b">
-<title>KORX Studio — Offline Design</title>
+<title>KORX STUDIO</title>
 <link rel="manifest" href="./manifest.webmanifest">
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#10131b;color:#fff;font-family:Arial,sans-serif}
-header{padding:15px;background:#080b12;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-.logo{font-size:22px;font-weight:900}.logo span{color:#ffd22f}
-button{padding:10px;margin:3px;border:1px solid #394155;border-radius:7px;background:#222938;color:white;cursor:pointer}
+header{background:#080b12;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.logo{font-size:22px;font-weight:900;letter-spacing:1px}
+.logo span{color:#ffd22f}
+nav,.toolbar,.tools,.sketch-tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button,select,input{font:inherit}
+button{background:#222938;color:#fff;border:1px solid #394155;border-radius:7px;padding:9px;cursor:pointer}
+button:hover,button.active{background:#ffd22f;color:#111}
 .primary{background:#ffd22f;color:#111;font-weight:bold}
-.layout{display:grid;grid-template-columns:180px 1fr 180px;min-height:90vh}
-aside{background:#191e2a;padding:12px}
-main{padding:15px;min-width:0}
-h3{font-size:13px;color:#ffd22f}
-#board{position:relative;margin:auto;width:min(100%,500px);aspect-ratio:4/5;background:white;overflow:hidden}
-.item{position:absolute;cursor:move;touch-action:none;white-space:pre-wrap}
-.stage{background:#080b12;padding:12px;min-height:70vh;display:flex;justify-content:center;align-items:center}
-input,select{max-width:100%;margin:5px 0}
-@media(max-width:700px){.layout{grid-template-columns:1fr}.stage{min-height:400px}aside{border-bottom:1px solid #394155}}
+.toolbar{background:#151b27;padding:10px;position:sticky;top:0;z-index:5}
+label{font-size:12px;color:#c3cada}
+select,input{background:#0b0e14;color:#fff;border:1px solid #394155;border-radius:5px;padding:6px;max-width:160px}
+input[type=color]{width:38px;height:32px;padding:2px}
+input[type=number]{width:75px}
+.page{display:none;padding:12px}
+.page.active{display:block}
+#status{color:#ffd22f;font-size:12px}
+.stage{min-height:60vh;background:#080b12;border:1px solid #343d50;border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:center;overflow:auto}
+#board{position:relative;width:min(100%,560px);aspect-ratio:4/5;background:#fff;overflow:hidden;flex-shrink:0}
+.item{position:absolute;white-space:pre-wrap;overflow-wrap:anywhere;cursor:move;touch-action:none;user-select:none;min-width:10px}
+.item.selected{outline:1px dashed #2878ff}
+.item img{width:100%;height:100%;object-fit:contain}
+.note{color:#aab3c5;font-size:12px;line-height:1.5}
+#sketchCanvas{display:block;width:100%;height:60vh;min-height:300px;background:#fff;border-radius:8px;touch-action:none}
+.template-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.template{padding:28px 8px;border:1px solid #394155;border-radius:8px;text-align:center;font-weight:bold;cursor:pointer}
+@media(max-width:700px){
+header{display:block}
+nav{margin-top:12px}
+nav button{flex:1}
+.toolbar{position:static}
+.page{padding:7px}
+.stage{min-height:55vh}
+}
+@media print{
+header,.toolbar,.tools,.note,#status{display:none!important}
+.page{display:block!important}
+.stage{background:#fff;border:0}
+#board{width:100%;max-width:none}
+}
 </style>
 </head>
+
 <body>
+
 <header>
-<div class="logo">KORX <span>STUDIO</span></div>
-<div>
-<button onclick="newDesign()">New</button>
-<button onclick="saveDesign()">Save</button>
-<button onclick="loadDesign()">Open saved</button>
-<button class="primary" onclick="window.print()">Export / Print</button>
-</div>
+  <div class="logo">KORX <span>STUDIO</span>
+    <div style="font-size:9px;color:#aab3c5">OFFLINE DESIGN WORKSPACE</div>
+  </div>
+
+  <nav>
+    <button class="active" data-page="design">Design</button>
+    <button data-page="sketch">Sketch Pad</button>
+    <button data-page="templates">Templates</button>
+    <button id="addText">+ Text</button>
+    <button id="addPhoto">+ Photo</button>
+    <button id="addShape">+ Shape</button>
+    <button id="save">Save</button>
+    <button id="open">Open</button>
+    <button class="primary" id="export">Export</button>
+  </nav>
 </header>
-<div class="layout">
-<aside>
-<h3>ADD ELEMENTS</h3>
-<button onclick="addText()">＋ Text</button>
-<button onclick="addHeading()">＋ Heading</button>
-<button onclick="addShape('rect')">Rectangle</button>
-<button onclick="addShape('circle')">Circle</button>
-<button onclick="document.getElementById('photo').click()">Add photo</button>
-<input id="photo" type="file" accept="image/*" hidden onchange="addPhoto(event)">
-<h3>TEMPLATES</h3>
-<button onclick="template('sale')">Sale flyer</button>
-<button onclick="template('birthday')">Birthday</button>
-<button onclick="template('quote')">Quote</button>
-<h3>CANVAS</h3>
-<select onchange="board.style.aspectRatio=this.value">
-<option value="4/5">Flyer portrait</option>
-<option value="1/1">Square post</option>
-<option value="16/9">Landscape</option>
-<option value="9/16">Story</option>
-</select>
-<p>Background</p>
-<input type="color" value="#ffffff" onchange="board.style.background=this.value">
-</aside>
-<main>
-<p style="color:#ffd22f">Your creative space • KORX</p>
-<div class="stage"><div id="board"></div></div>
-</main>
-<aside>
-<h3>EDIT SELECTED</h3>
-<p>Text</p>
-<input id="editText" placeholder="Select text" oninput="editText(this.value)">
-<p>Text colour</p>
-<input id="editColor" type="color" value="#111111" onchange="editColor(this.value)">
-<p>Font size</p>
-<input id="editSize" type="number" value="30" min="8" max="120" onchange="editSize(this.value)">
-<button onclick="deleteItem()">Delete selected</button>
-<p style="font-size:12px;color:#aaa">Save projects on this device. Reopen the website online once to enable offline caching.</p>
-</aside>
+
+<div class="toolbar" id="toolbar">
+  <label>Font<br><select id="font"></select></label>
+  <label>Size (px)<br><input id="size" type="number" min="1" max="500" value="32"></label>
+  <label>Text colour<br><input id="color" type="color" value="#111111"></label>
+  <button id="bold"><b>B</b></button>
+  <button id="italic"><i>I</i></button>
+  <button id="underline"><u>U</u></button>
+  <label>Alignment<br>
+    <select id="align">
+      <option value="left">Left</option>
+      <option value="center">Center</option>
+      <option value="right">Right</option>
+    </select>
+  </label>
+  <label>Canvas<br>
+    <select id="ratio">
+      <option value="4/5">Flyer portrait</option>
+      <option value="1/1">Square post</option>
+      <option value="16/9">Landscape</option>
+      <option value="9/16">Story</option>
+      <option value="210/297">A4 portrait</option>
+    </select>
+  </label>
+  <label>Background<br><input id="bg" type="color" value="#ffffff"></label>
+  <button id="delete">Delete selected</button>
 </div>
+
+<section class="page active" id="design">
+  <p id="status">KORX STUDIO is ready.</p>
+
+  <div class="tools">
+    <button id="heading">+ Heading</button>
+    <button id="rectangle">Rectangle</button>
+    <button id="circle">Circle</button>
+    <button id="line">Line</button>
+    <button id="undo">Undo</button>
+    <button id="clear">Clear canvas</button>
+  </div>
+
+  <div class="stage">
+    <div id="board"></div>
+  </div>
+
+  <p class="note">
+    Select and drag objects to move them. Select text to change its font,
+    size, colour, alignment and style. Save stores your design in this
+    browser on this device.
+  </p>
+</section>
+
+<section class="page" id="sketch">
+  <p style="color:#ffd22f">Independent Sketch Pad</p>
+
+  <div class="sketch-tools">
+    <label>Pen colour <input id="penColor" type="color" value="#111111"></label>
+    <label>Brush size <input id="penSize" type="range" min="1" max="40" value="5"></label>
+    <button id="pen" class="active">Pen</button>
+    <button id="eraser">Eraser</button>
+    <button id="clearSketch">Clear sketch</button>
+    <button id="saveSketch">Save sketch</button>
+    <button id="downloadSketch">Download PNG</button>
+  </div>
+
+  <br>
+  <canvas id="sketchCanvas"></canvas>
+  <p class="note">Draw with your finger. The sketch pad is separate from your design.</p>
+</section>
+
+<section class="page" id="templates">
+  <p style="color:#ffd22f">Choose a starter template.</p>
+
+  <div class="template-grid">
+    <div class="template" data-template="sale" style="background:#fff1df;color:#e84720">
+      MEGA SALE<br>UP TO 50% OFF
+    </div>
+    <div class="template" data-template="birthday" style="background:#fff0f6;color:#b51b69">
+      HAPPY BIRTHDAY
+    </div>
+    <div class="template" data-template="quote" style="background:#10131b;color:#ffd22f">
+      DREAM BIG.<br>START NOW.
+    </div>
+    <div class="template" data-template="business" style="background:#eaf2ff;color:#1649a8">
+      YOUR BRAND<br>BUSINESS FLYER
+    </div>
+  </div>
+</section>
+
+<input id="photoFile" type="file" accept="image/*" hidden>
+
 <script>
-const board=document.getElementById('board');
-let selected=null,drag=null,z=1;
-function selectItem(e){if(selected)selected.style.outline='none';selected=e;e.style.outline='1px dashed blue';document.getElementById('editText').value=e.dataset.type==='text'?e.textContent:'';document.getElementById('editColor').value=e.dataset.color||'#111111';document.getElementById('editSize').value=parseInt(e.style.fontSize)||30}
-function add(type,text='Your text',color='#111111',size=30){
-const e=document.createElement('div');e.className='item';e.dataset.type=type;e.dataset.color=color;e.style.left='15%';e.style.top='20%';e.style.zIndex=++z;e.style.color=color;
-if(type==='text'){e.textContent=text;e.style.fontSize=size+'px';e.style.fontWeight='bold';e.style.maxWidth='85%'}
-if(type==='rect'||type==='circle'){e.style.width='45%';e.style.height='18%';e.style.background=color;if(type==='circle')e.style.borderRadius='50%'}
-e.onpointerdown=ev=>{selectItem(e);const r=board.getBoundingClientRect();drag={x:ev.clientX,y:ev.clientY,l:parseFloat(e.style.left),t:parseFloat(e.style.top),w:r.width,h:r.height};e.setPointerCapture(ev.pointerId);ev.stopPropagation()};
-e.onpointermove=ev=>{if(drag&&selected===e){e.style.left=Math.max(0,Math.min(90,drag.l+(ev.clientX-drag.x)/drag.w*100))+'%';e.style.top=Math.max(0,Math.min(90,drag.t+(ev.clientY-drag.y)/drag.h*100))+'%'}};
-e.onpointerup=()=>drag=null;board.appendChild(e);selectItem(e);return e}
-function addText(){add('text')}
-function addHeading(){add('text','YOUR HEADLINE','#111111',40)}
-function addShape(t){add(t,'','#2870ed',30)}
-function addPhoto(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const e=add('text','');e.textContent='';e.dataset.type='photo';const im=document.createElement('img');im.src=r.result;im.style.width='100%';im.style.maxHeight='300px';e.appendChild(im);e.style.width='65%'};r.readAsDataURL(f)}
-function editText(v){if(selected&&selected.dataset.type==='text')selected.textContent=v}
-function editColor(v){if(!selected)return;selected.dataset.color=v;if(selected.dataset.type==='text')selected.style.color=v;else selected.style.background=v}
-function editSize(v){if(selected&&selected.dataset.type==='text')selected.style.fontSize=v+'px'}
-function deleteItem(){if(selected){selected.remove();selected=null}}
-function newDesign(){if(confirm('Clear this design?')){board.innerHTML='';selected=null}}
-function saveDesign(){try{localStorage.setItem('korx-design',JSON.stringify({html:board.innerHTML,bg:board.style.background,ratio:board.style.aspectRatio}));alert('Design saved on this device!')}catch(e){alert('Could not save this design')}}
-function loadDesign(){const s=localStorage.getItem('korx-design');if(!s){alert('No saved design yet');return}const d=JSON.parse(s);board.innerHTML=d.html;board.style.background=d.bg;board.style.aspectRatio=d.ratio;selected=null;alert('Design opened!')}
-function template(t){board.innerHTML='';if(t==='sale'){board.style.background='#fff1df';add('rect','','#ef4723');add('text','MEGA SALE','#ffffff',40);add('text','UP TO 50% OFF','#111111',32);add('text','SHOP TODAY','#ef4723',22)}else if(t==='birthday'){board.style.background='#fff0f6';add('text','HAPPY BIRTHDAY','#c51b70',34);add('text','Wishing you joy and happiness','#111111',20)}else{board.style.background='#10131b';add('text','DREAM BIG.\\nSTART NOW.','#ffffff',36);add('text','STAY CONSISTENT','#ffd22f',20)}}
-if('serviceWorker'in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-</script>
-</body>
-</html>
+const $ = id => document.getElementById(id);
+const board = $("board");
+
+let selected = null;
+let drag = null;
+let history = [];
+let zIndex = 1;
+
+const fonts = [
+"Arial","Arial Black","Arial Narrow","Arial Rounded MT Bold","Bahnschrift",
+"Baskerville","Bodoni MT","Book Antiqua","Bookman Old Style","Calibri",
+"Cambria","Candara","Century Gothic","Comic Sans MS","Consolas",
+"Constantia","Corbel","Courier New","Dubai","Ebrima",
+"Franklin Gothic Medium","Garamond","Georgia","Gill Sans","Helvetica",
+"Impact","Lucida Console","Lucida Sans","Lucida Sans Unicode","Microsoft Sans Serif",
+"Palatino Linotype","Segoe UI","Segoe UI Light","Segoe UI Semibold","Tahoma",
+"Times New Roman","Trebuchet MS","Verdana","Andale Mono","Didot",
+"American Typewriter","Avenir","Avenir Next","Charter","Futura",
+"Geneva","Gill Sans MT","Hoefler Text","Menlo","Monaco",
+"Montserrat","Poppins","Inter","Roboto","Open Sans",
+"Lato","Oswald","Raleway","Nunito","Nunito Sans",
+"Playfair Display","Merriweather","Roboto Slab","PT Sans","PT Serif",
+"Source Sans 3","Source Serif 4","Ubuntu","Rubik","Work Sans",
+"DM Sans","DM Serif Display","Manrope","Outfit","Space Grotesk",
+"Space Mono","JetBrains Mono","Fira Code","IBM Plex Sans","IBM Plex Mono",
+"Archivo","Archivo Black","Anton","Bebas Neue","League Spartan",
+"Barlow","Barlow Condensed","Josefin Sans","Quicksand","Comfortaa",
+"Dancing Script","Pacifico","Caveat","Satisfy","Lobster",
+"Abril Fatface","Cinzel","Cormorant Garamond","Bangers","Righteous"
+];
+
+fonts.forEach(name => {
+  const option = document.createElement("option");
+  option.value = name;
+  option.textContent = name;
+  $("font").appendChild(option);
+});
+$("font").value = "Montserrat";
+
+function status(message) {
+  $("status").textContent = message;
+}
+
+function showPage(id) {
+  document.querySelectorAll(".page").forEach(page =>
+    page.classList.toggle("active", page.id === id)
+  );
+  document.querySelectorAll("[data-page]").forEach(button =>
+    button.classList.toggle("active", button.dataset.page === id)
+  );
+  $("toolbar").style.display = id === "design" ? "flex" : "none";
+}
+
+document.querySelectorAll("[data-page]").forEach(button => {
+  button.onclick = () => showPage(button.dataset.page);
+});
+
+function saveHistory() {
+  history.push(board.innerHTML);
+  if (history.length > 25) history.shift();
+}
+
+function selectItem(element) {
+  if (selected) selected.classList.remove("selected");
+  selected = element;
+
+  if (!element) return;
+
+  element.classList.add("selected");
+
+  if (element.dataset.kind === "text") {
+    $("font").value = element.dataset.font || "Arial";
+    $("size").value = parseInt(element.style.fontSize) || 32;
+    $("color").value = element.dataset.color || "#111111";
+    $("align").value = element.style.textAlign || "left";
+  }
+}
+
+function addItem(kind, options = {}) {
+  saveHistory();
+
+  const item = document.createElement("div");
+  item.className = "item";
+  item.dataset.kind = kind;
+  item.dataset.color = options.color || "#111111";
+
+  item.style.left = (options.left ?? 12) + "%";
+  item.style.top = (options.top ?? 20) + "%";
+  item.style.width = (options.width ?? 75) + "%";
+  item.style.zIndex = ++zIndex;
+
+  if (kind === "text") {
+    item.textContent = options.text || "Your text";
+    item.dataset.font = options.font || $("font").value;
+    item.style.fontFamily = item.dataset.font + ", sans-serif";
+    item.style.fontSize = (options.size || +$("size").value || 32) + "px";
+    item.style.color = item.dataset.color;
+    item.style.fontWeight = options.bold ? "800" : "400";
+    item.style.textAlign = options.align || "left";
+  }
+
+  if (["rect","circle","line"].includes(kind)) {
+    item.style.height = (options.height || 20) + "%";
+    item.style.background = options.color || "#2867e8";
+
+    if (kind === "circle") item.style.borderRadius = "50%";
+    if (kind === "line") item.style.height = "4px";
+  }
+
+  if (kind === "photo" && options.src) {
+    const image = document.createElement("img");
+    image.src = options.src;
+    item.appendChild(image);
+    item.style.height = "40%";
+  }
+
+  item.addEventListener("pointerdown", event => {
+    selectItem(item);
+
+    const rect = board.getBoundingClientRect();
+
+    drag = {
+      x: event.clientX,
+      y: event.clientY,
+      left: parseFloat(item.style.left),
+      top: parseFloat(item.style.top),
+      width: rect.width,
+      height: rect.height
+    };
+
+    item.setPointerCapture(event.pointerId);
+    event.stopPropagation();
+  });
+
+  item.addEventListener("pointermove", event => {
+    if (!drag || selected !== item) return;
+
+    item.style.left = Math.max(0, Math.min(95,
+      drag.left + (event.clientX - drag.x) / drag.width * 100
+    )) + "%";
+
+    item.style.top = Math.max(0, Math.min(95,
+      drag.top + (event.clientY - drag.y) / drag.height * 100
+    )) + "%";
+  });
+
+  item.addEventListener("pointerup", () => drag = null);
+  item.addEventListener("pointercancel", () => drag = null);
+
+  board.appendChild(item);
+  selectItem(item);
+
+  return item;
+}
+
+$("addText").onclick = () => {
+  showPage("design");
+  addItem("text");
+};
+
+$("heading").onclick = () => addItem("text", {
+  text:"YOUR HEADLINE", size:42, bold:true,
+  width:90, left:5, top:12
+});
+
+$("addShape").onclick = () => addItem("rect", {color:"#2867e8"});
+$("rectangle").onclick = () => addItem("rect", {color:"#2867e8"});
+$("circle").onclick = () => addItem("circle", {color:"#ffd22f"});
+$("line").onclick = () => addItem("line", {color:"#2867e8"});
+
+$("addPhoto").onclick = () => $("photoFile").click();
+
+$("photoFile").onchange = event => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = () => addItem("photo", {src:reader.result});
+  reader.readAsDataURL(file);
+
+  event.target.value = "";
+};
+
+$("font").onchange = () => {
+  if (selected?.dataset.kind !== "text") return;
+
+  selected.dataset.font = $("font").value;
+  selected.style.fontFamily = $("font").value + ", sans-serif";
+};
+
+$("size").onchange = () => {
+  if (selected?.dataset.kind !== "text") return;
+
+  selected.style.fontSize =
+    Math.max(1, Math.min(500, +$("size").value || 32)) + "px";
+};
+
+$("color").oninput = () => {
+  if (selected?.dataset.kind !== "text") return;
+
+  selected.style.color = $("color").value;
+  selected.dataset.color = $("color").value;
+};
+
+$("align").onchange = () => {
+  if (selected?.dataset.kind === "text") {
+    selected.style.textAlign = $("align").value;
+  }
+};
+
+$("bold").onclick = () => {
+  if (selected?.dataset.kind === "text") {
+    selected.style.fontWeight =
+      selected.style.fontWeight === "800" ? "400" : "800";
+  }
+};
+
+$("italic").onclick = () => {
+  if (selected?.dataset.kind === "text") {
+    selected.style.fontStyle =
+      selected.style.fontStyle === "italic" ? "normal" : "italic";
+  }
+};
+
+$("underline").onclick = () => {
+  if (selected?.dataset.kind === "text") {
+    selected.style.textDecoration =
+      selected
