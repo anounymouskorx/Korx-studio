@@ -1,0 +1,101 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10131b">
+<title>KORX Studio — Offline Design</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#10131b;color:#fff;font-family:Arial,sans-serif}
+header{padding:15px;background:#080b12;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.logo{font-size:22px;font-weight:900}.logo span{color:#ffd22f}
+button{padding:10px;margin:3px;border:1px solid #394155;border-radius:7px;background:#222938;color:white;cursor:pointer}
+.primary{background:#ffd22f;color:#111;font-weight:bold}
+.layout{display:grid;grid-template-columns:180px 1fr 180px;min-height:90vh}
+aside{background:#191e2a;padding:12px}
+main{padding:15px;min-width:0}
+h3{font-size:13px;color:#ffd22f}
+#board{position:relative;margin:auto;width:min(100%,500px);aspect-ratio:4/5;background:white;overflow:hidden}
+.item{position:absolute;cursor:move;touch-action:none;white-space:pre-wrap}
+.stage{background:#080b12;padding:12px;min-height:70vh;display:flex;justify-content:center;align-items:center}
+input,select{max-width:100%;margin:5px 0}
+@media(max-width:700px){.layout{grid-template-columns:1fr}.stage{min-height:400px}aside{border-bottom:1px solid #394155}}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">KORX <span>STUDIO</span></div>
+<div>
+<button onclick="newDesign()">New</button>
+<button onclick="saveDesign()">Save</button>
+<button onclick="loadDesign()">Open saved</button>
+<button class="primary" onclick="window.print()">Export / Print</button>
+</div>
+</header>
+<div class="layout">
+<aside>
+<h3>ADD ELEMENTS</h3>
+<button onclick="addText()">＋ Text</button>
+<button onclick="addHeading()">＋ Heading</button>
+<button onclick="addShape('rect')">Rectangle</button>
+<button onclick="addShape('circle')">Circle</button>
+<button onclick="document.getElementById('photo').click()">Add photo</button>
+<input id="photo" type="file" accept="image/*" hidden onchange="addPhoto(event)">
+<h3>TEMPLATES</h3>
+<button onclick="template('sale')">Sale flyer</button>
+<button onclick="template('birthday')">Birthday</button>
+<button onclick="template('quote')">Quote</button>
+<h3>CANVAS</h3>
+<select onchange="board.style.aspectRatio=this.value">
+<option value="4/5">Flyer portrait</option>
+<option value="1/1">Square post</option>
+<option value="16/9">Landscape</option>
+<option value="9/16">Story</option>
+</select>
+<p>Background</p>
+<input type="color" value="#ffffff" onchange="board.style.background=this.value">
+</aside>
+<main>
+<p style="color:#ffd22f">Your creative space • KORX</p>
+<div class="stage"><div id="board"></div></div>
+</main>
+<aside>
+<h3>EDIT SELECTED</h3>
+<p>Text</p>
+<input id="editText" placeholder="Select text" oninput="editText(this.value)">
+<p>Text colour</p>
+<input id="editColor" type="color" value="#111111" onchange="editColor(this.value)">
+<p>Font size</p>
+<input id="editSize" type="number" value="30" min="8" max="120" onchange="editSize(this.value)">
+<button onclick="deleteItem()">Delete selected</button>
+<p style="font-size:12px;color:#aaa">Save projects on this device. Reopen the website online once to enable offline caching.</p>
+</aside>
+</div>
+<script>
+const board=document.getElementById('board');
+let selected=null,drag=null,z=1;
+function selectItem(e){if(selected)selected.style.outline='none';selected=e;e.style.outline='1px dashed blue';document.getElementById('editText').value=e.dataset.type==='text'?e.textContent:'';document.getElementById('editColor').value=e.dataset.color||'#111111';document.getElementById('editSize').value=parseInt(e.style.fontSize)||30}
+function add(type,text='Your text',color='#111111',size=30){
+const e=document.createElement('div');e.className='item';e.dataset.type=type;e.dataset.color=color;e.style.left='15%';e.style.top='20%';e.style.zIndex=++z;e.style.color=color;
+if(type==='text'){e.textContent=text;e.style.fontSize=size+'px';e.style.fontWeight='bold';e.style.maxWidth='85%'}
+if(type==='rect'||type==='circle'){e.style.width='45%';e.style.height='18%';e.style.background=color;if(type==='circle')e.style.borderRadius='50%'}
+e.onpointerdown=ev=>{selectItem(e);const r=board.getBoundingClientRect();drag={x:ev.clientX,y:ev.clientY,l:parseFloat(e.style.left),t:parseFloat(e.style.top),w:r.width,h:r.height};e.setPointerCapture(ev.pointerId);ev.stopPropagation()};
+e.onpointermove=ev=>{if(drag&&selected===e){e.style.left=Math.max(0,Math.min(90,drag.l+(ev.clientX-drag.x)/drag.w*100))+'%';e.style.top=Math.max(0,Math.min(90,drag.t+(ev.clientY-drag.y)/drag.h*100))+'%'}};
+e.onpointerup=()=>drag=null;board.appendChild(e);selectItem(e);return e}
+function addText(){add('text')}
+function addHeading(){add('text','YOUR HEADLINE','#111111',40)}
+function addShape(t){add(t,'','#2870ed',30)}
+function addPhoto(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const e=add('text','');e.textContent='';e.dataset.type='photo';const im=document.createElement('img');im.src=r.result;im.style.width='100%';im.style.maxHeight='300px';e.appendChild(im);e.style.width='65%'};r.readAsDataURL(f)}
+function editText(v){if(selected&&selected.dataset.type==='text')selected.textContent=v}
+function editColor(v){if(!selected)return;selected.dataset.color=v;if(selected.dataset.type==='text')selected.style.color=v;else selected.style.background=v}
+function editSize(v){if(selected&&selected.dataset.type==='text')selected.style.fontSize=v+'px'}
+function deleteItem(){if(selected){selected.remove();selected=null}}
+function newDesign(){if(confirm('Clear this design?')){board.innerHTML='';selected=null}}
+function saveDesign(){try{localStorage.setItem('korx-design',JSON.stringify({html:board.innerHTML,bg:board.style.background,ratio:board.style.aspectRatio}));alert('Design saved on this device!')}catch(e){alert('Could not save this design')}}
+function loadDesign(){const s=localStorage.getItem('korx-design');if(!s){alert('No saved design yet');return}const d=JSON.parse(s);board.innerHTML=d.html;board.style.background=d.bg;board.style.aspectRatio=d.ratio;selected=null;alert('Design opened!')}
+function template(t){board.innerHTML='';if(t==='sale'){board.style.background='#fff1df';add('rect','','#ef4723');add('text','MEGA SALE','#ffffff',40);add('text','UP TO 50% OFF','#111111',32);add('text','SHOP TODAY','#ef4723',22)}else if(t==='birthday'){board.style.background='#fff0f6';add('text','HAPPY BIRTHDAY','#c51b70',34);add('text','Wishing you joy and happiness','#111111',20)}else{board.style.background='#10131b';add('text','DREAM BIG.\\nSTART NOW.','#ffffff',36);add('text','STAY CONSISTENT','#ffd22f',20)}}
+if('serviceWorker'in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
